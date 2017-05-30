@@ -1,0 +1,25 @@
+#!/usr/bin/python
+import cc1101, rf_analyzer
+from time import sleep
+
+if __name__ == "__main__":
+
+   config = cc1101.Config()
+   config.setProfile_443_OOK()
+   config.setPaTable("high")
+   config.setFrequency(433.96)
+   config.setDataRate(2400)
+
+   cc1101 = cc1101.Manager(config, cc1101.Device("/dev/cc1101_green", timeout=1))
+
+   try:
+      cc1101.open()
+      cc1101.configure()
+      cc1101.sendOOKStatic("0011110100001010000000010", repeat=3);  # light on/off
+
+   except KeyboardInterrupt:
+      print "User interrupt"
+      cc1101.close()
+
+   except Exception, e:
+      print "Exception: {}".format(e)

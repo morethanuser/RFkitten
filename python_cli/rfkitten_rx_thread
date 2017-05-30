@@ -1,0 +1,52 @@
+#!/usr/bin/python
+from re import split
+import threading
+from time import sleep
+
+import cc1101, rf_analyzer
+
+
+def split_by_zero(data, baud):
+   bin_str = ''.join(format(byte, '08b') for byte in data)
+   for splitted in split('0{20,}', bin_str):
+      if (len(splitted) > 0):
+         # make sure that we've got some zeroes at the end for regexp
+         splitted+="0" * 20
+         # analyze and print ook data
+         rf_analyzer.analyze_ook(splitted, baud, bin_input=True, show_original=True)
+
+
+if __name__ == "__main__":
+
+   data_rate = 4800
+
+   config = cc1101.Config()
+   config.setProfile_443_OOK()
+   config.setDataRate(data_rate)
+   config.setChannelBandwidth(300)
+   config.setSensivity("+10 dB")
+   cc1101 = cc1101.Manager(config, cc1101.Device("/dev/cc1101_green", timeout=1))
+
+   def analyze(data):
+      split_by_zero(data, data_rate)
+
+   try:
+      cc1101.open()
+      cc1101.configure()
+
+      run = 1
+      t = threading.Thread(target=cc1101.readerLoop, args=(lambda: run, 1024, analyze))
+      t.start()
+
+      while(run):
+         sleep(0.01)
+
+   except KeyboardInterrupt:
+      print "User interrupt"
+      run = 0
+      cc1101.close()
+
+   except Exception, e:
+      run = 0
+      print "Exception: {}".format(e)
+
